@@ -1,6 +1,13 @@
 from enum import StrEnum
 from typing import TypedDict
 
+class CompanyNames(StrEnum):
+    HEIDELBERG = "heidelberg_evobuild"
+    NRMCA= "NRMCA"
+
+HEIDELBERG_MAX_SAVINGS = 0.85
+HEIDELBERG_MIN_SAVINGS = 0.15
+
 class ConcreteAlteration(StrEnum):
     # min amount
     # TODO fix strings
@@ -13,6 +20,7 @@ class ConcreteAlteration(StrEnum):
     _6_SLAG_50 = r">50% Slag"
     _7_FLY_ASH_20_SLAG_30 = r">20% Fly Ash and >30%Slag"
     _100_UNKNOWN = "Unknown"
+
 
 
 

@@ -1,4 +1,10 @@
-from materials.interfaces import ConcreteAlteration, Entry, NRMCAEntry
+from materials.interfaces import (
+    HEIDELBERG_MIN_SAVINGS,
+    CompanyNames,
+    ConcreteAlteration,
+    Entry,
+    NRMCAEntry,
+)
 from materials.paths import static_paths, PATH_TO_COMPANIES_DATA, PATH_TO_NRMCA_DATA
 from utils4plans.io import read_json
 from utils4plans.lists import chain_flatten
@@ -11,9 +17,6 @@ import materials.columns as col
 NRMCA_UNIT = "kg-co2e_m3"
 NRMCA_COMPANY = "NRMCA"
 GWP_FOR_CURRENT_ALTERATION_CONCERN = slice(0, 8)
-
-HEIDELBERG_MAX_SAVINGS = 0.85
-HEIDELBERG_MIN_SAVINGS = 0.15
 
 
 def process_nrmca_data():
@@ -56,20 +59,37 @@ def process_companies_data():
     return df
 
 
+def edit_heidelberg_data(df: pl.DataFrame) -> pl.DataFrame:
+    def calc_remain_perc_after_savings(savings: float):
+        return 1 - savings
+    # TODO better -> duplicate rows.. 
+    return df.with_columns(
+        pl.when(pl.col(col.COMPANY) == CompanyNames.HEIDELBERG.value)
+        .then(pl.col(col.GWP) * calc_remain_perc_after_savings(HEIDELBERG_MIN_SAVINGS))
+        .otherwise(pl.col(col.GWP))
+        .alias(col.GWP)
+    )
+
+
 def combine_data():
     companies = process_companies_data()
-    rprint(companies)
+    # rprint(companies)
     nrmca = process_nrmca_data()
-    rprint(nrmca)
+    # rprint(nrmca)
 
-    df = pl.concat([nrmca, companies], how="vertical_relaxed").select(
-        [
-            pl.all().exclude([col.IMPERIAL_PSI]),
-            pl.col(col.IMPERIAL_PSI).list.get(0).alias(col.IMPERIAL_PSI_MIN),
-            pl.col(col.IMPERIAL_PSI).list.get(1).alias(col.IMPERIAL_PSI_MAX),
-        ]
+    df = (
+        pl.concat([nrmca, companies], how="vertical_relaxed")
+        .select(
+            [
+                pl.all().exclude([col.IMPERIAL_PSI]),
+                pl.col(col.IMPERIAL_PSI).list.get(0).alias(col.IMPERIAL_PSI_MIN),
+                pl.col(col.IMPERIAL_PSI).list.get(1).alias(col.IMPERIAL_PSI_MAX),
+            ]
+        )
+        .pipe(edit_heidelberg_data)
     )
-    rprint(df)
+    # rprint(df)
+    return df
 
 
 if __name__ == "__main__":
