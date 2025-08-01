@@ -1,0 +1,31 @@
+[
+  {
+    "company": "cemex_ventura",
+    "imperial_psi": [5000, 5000],
+    "alteration_details": "unknown",
+    "gwp": 310,
+    "gwp_unit": "kg-co2e_m3"
+  },
+
+  {
+    "company": "heidelberg_evobuild",
+    "imperial_psi": [3000, 3000],
+    "alteration_details": "unknown",
+    "gwp": 291,
+    "gwp_unit": "kg-co2e_m3"
+  },
+  {
+    "company": "heidelberg_evobuild",
+    "imperial_psi": [4000, 4000],
+    "alteration_details": "unknown",
+    "gwp": 343,
+    "gwp_unit": "kg-co2e_m3"
+  },
+  {
+    "company": "heidelberg_evobuild",
+    "imperial_psi": [5000, 5000],
+    "alteration_details": "unknown",
+    "gwp": 406,
+    "gwp_unit": "kg-co2e_m3"
+  }
+]
