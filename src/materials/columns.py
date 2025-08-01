@@ -1,0 +1,8 @@
+COMPANY = "company"
+IMPERIAL_PSI = "imperial_psi"
+IMPERIAL_PSI_MIN = "imperial_psi_min"
+IMPERIAL_PSI_MAX = "imperial_psi_max"
+ALTERATION_DETAILS  = "alteration_details"
+ALTERATION_DETAILS_PRINT_NAME  = "alteration_details_print_name"
+GWP = "gwp"
+GWP_UNT = "gwp_unit"

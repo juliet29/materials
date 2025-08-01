@@ -1,57 +1,19 @@
-from typing import TypedDict
+from materials.interfaces import ConcreteAlteration, Entry, NRMCAEntry
 from materials.paths import static_paths, PATH_TO_COMPANIES_DATA, PATH_TO_NRMCA_DATA
 from utils4plans.io import read_json
 from utils4plans.lists import chain_flatten
 import polars as pl
-from enum import StrEnum
 from rich import print as rprint
+from copy import deepcopy
+import materials.columns as col
 
 # TODO these are data-derived constants that should be moved and documented
 NRMCA_UNIT = "kg-co2e_m3"
 NRMCA_COMPANY = "NRMCA"
 GWP_FOR_CURRENT_ALTERATION_CONCERN = slice(0, 8)
 
-
-class ConcreteAlteration(StrEnum):
-    # min amount
-    # TODO fix strings
-    _0_FLY_ASH_SLAG_0 = r"0-19% Fly Ash and/or Slag"
-    _1_FLY_ASH_20 = r"20-29% Fly Ash"
-    _2_FLY_ASH_30 = r"30-39% Fly Ash"
-    _3_FLY_ASH_40 = r"40-49% Fly Ash"
-    _4_SLAG_30 = r"30-39% Slag"
-    _5_SLAG_40 = r"40-49% Slag"
-    _6_SLAG_50 = r">50% Slag"
-    _7_FLY_ASH_20_SLAG_30 = r">20% Fly Ash and >30%Slag"
-    _100_UNKNOWN = "Unknown"
-
-
-class Entry(TypedDict):
-    company: str
-    imperial_psi_min: int
-    imperial_psi_max: int
-    alteration_details: str
-    alteration_details_print_name: str
-    gwp: int
-    gwp_unit: str
-
-
-class CompanyEntry(TypedDict):
-    company: str
-    imperial_psi: tuple[int, int]
-    alteration_details: str
-    gwp: int
-    gwp_unit: str
-
-
-class NRMCAEntry(TypedDict):
-    imperial_psi: tuple[int, int]
-    gwp: list[int]
-
-
-def get_data():
-    companies_data = read_json(static_paths.inputs, PATH_TO_COMPANIES_DATA)
-    return companies_data
+HEIDELBERG_MAX_SAVINGS = 0.85
+HEIDELBERG_MIN_SAVINGS = 0.15
 
 
 def process_nrmca_data():
@@ -67,12 +29,11 @@ def process_nrmca_data():
         for alteration, gwp in alter_at_gwp.items():
             new_entry: Entry = {
                 "company": NRMCA_COMPANY,
-                "imperial_psi_min": entry["imperial_psi"][0],
-                "imperial_psi_max": entry["imperial_psi"][1],
-                "alteration_details": alteration.name,
-                "alteration_details_print_name": alteration.value,
+                "imperial_psi": entry["imperial_psi"],
                 "gwp": gwp,
                 "gwp_unit": NRMCA_UNIT,
+                "alteration_details": alteration.name,
+                "alteration_details_print_name": alteration.value,
             }
             new_entries.append(new_entry)
         return new_entries
@@ -83,5 +44,33 @@ def process_nrmca_data():
     # test expand psi
 
 
+def process_companies_data():
+    companies_data: list[Entry] = read_json(static_paths.inputs, PATH_TO_COMPANIES_DATA)
+    for entry in companies_data:
+        entry["alteration_details"] = ConcreteAlteration._100_UNKNOWN.name
+        entry["alteration_details_print_name"] = ConcreteAlteration._100_UNKNOWN.value
+
+    df = pl.from_dicts(companies_data)  # pyright: ignore[reportArgumentType]
+    rprint(df)
+
+    return df
+
+
+def combine_data():
+    companies = process_companies_data()
+    rprint(companies)
+    nrmca = process_nrmca_data()
+    rprint(nrmca)
+
+    df = pl.concat([nrmca, companies], how="vertical_relaxed").select(
+        [
+            pl.all().exclude([col.IMPERIAL_PSI]),
+            pl.col(col.IMPERIAL_PSI).list.get(0).alias(col.IMPERIAL_PSI_MIN),
+            pl.col(col.IMPERIAL_PSI).list.get(1).alias(col.IMPERIAL_PSI_MAX),
+        ]
+    )
+    rprint(df)
+
+
 if __name__ == "__main__":
-    process_nrmca_data()
+    combine_data()
